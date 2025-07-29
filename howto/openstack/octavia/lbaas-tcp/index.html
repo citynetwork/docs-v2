@@ -5788,30 +5788,30 @@ You can now use that to test the balancer and make sure it works as expected.</p
 <div class="highlight"><pre><span></span><code>ncat<span class="w"> </span>-kv<span class="w"> </span>-l<span class="w"> </span><span class="m">61234</span><span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;echo Yello from $(hostname)!&#39;</span>
 </code></pre></div>
 <p>Since the load balancer has a floating IP (<code>198.51.100.129</code>, in our example), and we know the port it listens to, we can try connecting to it via <code>wget</code> and see what happens:</p>
-<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>-q<span class="w"> </span><span class="m">198</span>.51.100.129:61234<span class="w"> </span>-O<span class="w"> </span>-
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>Yello from srv-lbaas-1!
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>wget<span class="w"> </span>-q<span class="w"> </span><span class="m">198</span>.51.100.129:61234<span class="w"> </span>-O<span class="w"> </span>-
+
+<span class="go">Yello from srv-lbaas-1!</span>
 </code></pre></div>
 <p>It looks like we talked to the first test server.
 If we run the exact same <code>wget</code> command for a second time, since the load balancer distributes client connection requests in a round-robin fashion, we expect to talk to the second server:</p>
-<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>-q<span class="w"> </span><span class="m">198</span>.51.100.129:61234<span class="w"> </span>-O<span class="w"> </span>-
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>Yello from srv-lbaas-2!
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>wget<span class="w"> </span>-q<span class="w"> </span><span class="m">198</span>.51.100.129:61234<span class="w"> </span>-O<span class="w"> </span>-
+
+<span class="go">Yello from srv-lbaas-2!</span>
 </code></pre></div>
 <p>During our testing, executing the <code>wget</code> command repeatedly, we were getting those two hostnames one after the other &mdash; and that was proof our TCP load balancer was working as expected.
 But there is one more expectation of any load balancer: the ability to skip backend hosts when they are inaccessible.</p>
 <p>To test our load balancer in this new scenario, let us first use <code>wget</code> to connect to port 61234 and jot down the backend server that will respond:</p>
-<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>-q<span class="w"> </span><span class="m">198</span>.51.100.129:61234<span class="w"> </span>-O<span class="w"> </span>-
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>Yello from srv-lbaas-2!
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>wget<span class="w"> </span>-q<span class="w"> </span><span class="m">198</span>.51.100.129:61234<span class="w"> </span>-O<span class="w"> </span>-
+
+<span class="go">Yello from srv-lbaas-2!</span>
 </code></pre></div>
 <p>We see that <code>srv-lbaas-2</code> responded. That means the next time we try to connect, <code>srv-lbaas-1</code> will respond.
 But if we SSH into <code>srv-lbaas-1</code> and terminate <code>ncat</code>, then after connecting with <code>wget</code> we will get a response from <code>srv-lbaas-2</code> &mdash; again.
 This, at least, is our expectation.
 So without further ado, we SSH into <code>srv-lbaas-1</code>, we terminate <code>ncat</code>, we log out, and from our local terminal, we type:</p>
-<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>-q<span class="w"> </span><span class="m">198</span>.51.100.129:61234<span class="w"> </span>-O<span class="w"> </span>-
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>Yello from srv-lbaas-2!
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>wget<span class="w"> </span>-q<span class="w"> </span><span class="m">198</span>.51.100.129:61234<span class="w"> </span>-O<span class="w"> </span>-
+
+<span class="go">Yello from srv-lbaas-2!</span>
 </code></pre></div>
 <p>Exactly as we expected, <code>srv-lbaas-2</code> has responded again, proving our load balancer behaves correctly.
 As an exercise, you might want to shutdown your <code>srv-lbaas-1</code> and/or re-enable <code>ncat</code>, and check the behavior of the load balancer.
@@ -5840,60 +5840,61 @@ To see real-time information regarding pool members operating status, click over
 </div>
 <div class="tabbed-block">
 <p>To create a health monitor for pool <code>mylb-pool</code> of load balancer <code>mylb</code>, type something like the following:</p>
-<div class="highlight"><pre><span></span><code>openstack<span class="w"> </span>loadbalancer<span class="w"> </span>healthmonitor<span class="w"> </span>create<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>openstack<span class="w"> </span>loadbalancer<span class="w"> </span>healthmonitor<span class="w"> </span>create<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--name<span class="o">=</span>mylb-pool-healthmon<span class="w"> </span>--type<span class="o">=</span>TCP<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--delay<span class="o">=</span><span class="m">10</span><span class="w"> </span>--timeout<span class="o">=</span><span class="m">5</span><span class="w"> </span>--max-retries<span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>mylb-pool
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>+---------------------+--------------------------------------+
-| Field               | Value                                |
-+---------------------+--------------------------------------+
-| project_id          | d42230ea21674515ab9197af89fa5192     |
-| name                | mylb-pool-healthmon                  |
-| admin_state_up      | True                                 |
-| pools               | 71ce0713-3bf4-4373-bc93-ea4a04f01754 |
-| created_at          | 2025-03-07T11:54:10                  |
-| provisioning_status | PENDING_CREATE                       |
-| updated_at          | None                                 |
-| delay               | 10                                   |
-| expected_codes      | None                                 |
-| max_retries         | 1                                    |
-| http_method         | None                                 |
-| timeout             | 5                                    |
-| max_retries_down    | 3                                    |
-| url_path            | None                                 |
-| type                | TCP                                  |
-| id                  | df9aeb33-6ff7-4610-b3ce-8ce925c611f7 |
-| operating_status    | OFFLINE                              |
-| http_version        | None                                 |
-| domain_name         | None                                 |
-| tags                |                                      |
-+---------------------+--------------------------------------+
+
+<span class="go">+---------------------+--------------------------------------+</span>
+<span class="go">| Field               | Value                                |</span>
+<span class="go">+---------------------+--------------------------------------+</span>
+<span class="go">| project_id          | d42230ea21674515ab9197af89fa5192     |</span>
+<span class="go">| name                | mylb-pool-healthmon                  |</span>
+<span class="go">| admin_state_up      | True                                 |</span>
+<span class="go">| pools               | 71ce0713-3bf4-4373-bc93-ea4a04f01754 |</span>
+<span class="go">| created_at          | 2025-03-07T11:54:10                  |</span>
+<span class="go">| provisioning_status | PENDING_CREATE                       |</span>
+<span class="go">| updated_at          | None                                 |</span>
+<span class="go">| delay               | 10                                   |</span>
+<span class="go">| expected_codes      | None                                 |</span>
+<span class="go">| max_retries         | 1                                    |</span>
+<span class="go">| http_method         | None                                 |</span>
+<span class="go">| timeout             | 5                                    |</span>
+<span class="go">| max_retries_down    | 3                                    |</span>
+<span class="go">| url_path            | None                                 |</span>
+<span class="go">| type                | TCP                                  |</span>
+<span class="go">| id                  | df9aeb33-6ff7-4610-b3ce-8ce925c611f7 |</span>
+<span class="go">| operating_status    | OFFLINE                              |</span>
+<span class="go">| http_version        | None                                 |</span>
+<span class="go">| domain_name         | None                                 |</span>
+<span class="go">| tags                |                                      |</span>
+<span class="go">+---------------------+--------------------------------------+</span>
 </code></pre></div>
 <p>The name of the new health monitor is <code>mylb-pool-healthmon</code>, and the TCP protocol will be used to check whether members of pool <code>mylb-pool</code> are online or offline.
 To check the provisioning status of the health monitor, type:</p>
-<div class="highlight"><pre><span></span><code>openstack<span class="w"> </span>loadbalancer<span class="w"> </span>healthmonitor<span class="w"> </span>show<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>openstack<span class="w"> </span>loadbalancer<span class="w"> </span>healthmonitor<span class="w"> </span>show<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>mylb-pool-healthmon<span class="w"> </span>-c<span class="w"> </span>provisioning_status
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>+---------------------+--------+
-| Field               | Value  |
-+---------------------+--------+
-| provisioning_status | ACTIVE |
-+---------------------+--------+
+
+<span class="go">+---------------------+--------+</span>
+<span class="go">| Field               | Value  |</span>
+<span class="go">+---------------------+--------+</span>
+<span class="go">| provisioning_status | ACTIVE |</span>
+<span class="go">+---------------------+--------+</span>
 </code></pre></div>
 <p>Once the health monitor is provisioned, you may at any time check the pool members status like so:</p>
-<div class="highlight"><pre><span></span><code>openstack<span class="w"> </span>loadbalancer<span class="w"> </span>member<span class="w"> </span>list<span class="w"> </span>mylb-pool
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+
-| id             | name | project_id     | provisioning_status | address      | protocol_port | operating_status | weight |
-+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+
-| 0d6b1284-67af- |      | d42230ea216745 | ACTIVE              | 10.15.25.149 |         61234 | ONLINE           |      1 |
-| 4b3b-91c1-     |      | 15ab9197af89fa |                     |              |               |                  |        |
-| 0e46bc3cc4c1   |      | 5192           |                     |              |               |                  |        |
-| 1d43123f-cb7a- |      | d42230ea216745 | ACTIVE              | 10.15.25.155 |         61234 | ONLINE           |      1 |
-| 48f3-982b-     |      | 15ab9197af89fa |                     |              |               |                  |        |
-| 52d39f4616d0   |      | 5192           |                     |              |               |                  |        |
-+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>openstack<span class="w"> </span>loadbalancer<span class="w"> </span>member<span class="w"> </span>list<span class="w"> </span>mylb-pool
+
+<span class="go">```plain</span>
+<span class="go">+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+</span>
+<span class="go">| id             | name | project_id     | provisioning_status | address      | protocol_port | operating_status | weight |</span>
+<span class="go">+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+</span>
+<span class="go">| 0d6b1284-67af- |      | d42230ea216745 | ACTIVE              | 10.15.25.149 |         61234 | ONLINE           |      1 |</span>
+<span class="go">| 4b3b-91c1-     |      | 15ab9197af89fa |                     |              |               |                  |        |</span>
+<span class="go">| 0e46bc3cc4c1   |      | 5192           |                     |              |               |                  |        |</span>
+<span class="go">| 1d43123f-cb7a- |      | d42230ea216745 | ACTIVE              | 10.15.25.155 |         61234 | ONLINE           |      1 |</span>
+<span class="go">| 48f3-982b-     |      | 15ab9197af89fa |                     |              |               |                  |        |</span>
+<span class="go">| 52d39f4616d0   |      | 5192           |                     |              |               |                  |        |</span>
+<span class="go">+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+</span>
 </code></pre></div>
 </div>
 </div>
@@ -5912,18 +5913,19 @@ Pay attention to the <em>Operating Status</em> column, where you can see the sta
 </div>
 <div class="tabbed-block">
 <p>To check the operating status of any of the pool members of your load balancer, type something like this:</p>
-<div class="highlight"><pre><span></span><code>openstack<span class="w"> </span>loadbalancer<span class="w"> </span>member<span class="w"> </span>list<span class="w"> </span>mylb-pool
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+
-| id             | name | project_id     | provisioning_status | address      | protocol_port | operating_status | weight |
-+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+
-| 0d6b1284-67af- |      | d42230ea216745 | ACTIVE              | 10.15.25.149 |         61234 | ERROR            |      1 |
-| 4b3b-91c1-     |      | 15ab9197af89fa |                     |              |               |                  |        |
-| 0e46bc3cc4c1   |      | 5192           |                     |              |               |                  |        |
-| 1d43123f-cb7a- |      | d42230ea216745 | ACTIVE              | 10.15.25.155 |         61234 | ONLINE           |      1 |
-| 48f3-982b-     |      | 15ab9197af89fa |                     |              |               |                  |        |
-| 52d39f4616d0   |      | 5192           |                     |              |               |                  |        |
-+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+
+<div class="highlight"><pre><span></span><code><span class="gp"># </span>openstack<span class="w"> </span>loadbalancer<span class="w"> </span>member<span class="w"> </span>list<span class="w"> </span>mylb-pool
+
+<span class="go">```plain</span>
+<span class="go">+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+</span>
+<span class="go">| id             | name | project_id     | provisioning_status | address      | protocol_port | operating_status | weight |</span>
+<span class="go">+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+</span>
+<span class="go">| 0d6b1284-67af- |      | d42230ea216745 | ACTIVE              | 10.15.25.149 |         61234 | ERROR            |      1 |</span>
+<span class="go">| 4b3b-91c1-     |      | 15ab9197af89fa |                     |              |               |                  |        |</span>
+<span class="go">| 0e46bc3cc4c1   |      | 5192           |                     |              |               |                  |        |</span>
+<span class="go">| 1d43123f-cb7a- |      | d42230ea216745 | ACTIVE              | 10.15.25.155 |         61234 | ONLINE           |      1 |</span>
+<span class="go">| 48f3-982b-     |      | 15ab9197af89fa |                     |              |               |                  |        |</span>
+<span class="go">| 52d39f4616d0   |      | 5192           |                     |              |               |                  |        |</span>
+<span class="go">+----------------+------+----------------+---------------------+--------------+---------------+------------------+--------+</span>
 </code></pre></div>
 <p>In the example above, see the <code>operating_status</code> column, specifically the status of server with the IP of <code>10.15.25.149</code> (that&rsquo;s <code>srv-lbaas-1</code>).
 Regarding the operating status of all pool members, you can always limit the scope of your query like so:</p>
@@ -5974,7 +5976,7 @@ Actually, while the service of interest in <code>srv-lbaas-1</code> is inaccessi
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="July 28, 2025 07:52:59 UTC">2025-07-28</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="July 29, 2025 16:38:18 UTC">2025-07-29</span>
   </span>
 
     
